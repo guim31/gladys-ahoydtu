@@ -79,13 +79,18 @@ export function httpRequest(url, { method = 'GET', body, timeoutMs }) {
  * @param {number} [options.timeoutMs]
  * @param {typeof httpRequest} [options.request] the transport
  */
-export function createClient({ baseUrl, timeoutMs = 10000, request = httpRequest }) {
+export function createClient({
+  baseUrl,
+  timeoutMs = 10000,
+  urgentTimeoutMs = 6000,
+  request = httpRequest,
+}) {
   let queue = Promise.resolve();
 
-  async function send(path, options) {
+  async function send(path, options, timeout = timeoutMs) {
     let response;
     try {
-      response = await request(`${baseUrl}${path}`, { ...options, timeoutMs });
+      response = await request(`${baseUrl}${path}`, { ...options, timeoutMs: timeout });
     } catch (err) {
       if (err instanceof AhoyError) {
         throw err;
@@ -121,8 +126,9 @@ export function createClient({ baseUrl, timeoutMs = 10000, request = httpRequest
      * @param {string} path e.g. "index", "inverter/id/0"
      */
     get(path, { urgent = false } = {}) {
-      const run = () => send(`/api/${path}`, { method: 'GET' });
-      return urgent ? run() : queued(run);
+      // An action makes three requests: 3 x 6 s stays under its 30 s timeout.
+      if (urgent) return send(`/api/${path}`, { method: 'GET' }, urgentTimeoutMs);
+      return queued(() => send(`/api/${path}`, { method: 'GET' }));
     },
 
     /**
@@ -135,7 +141,7 @@ export function createClient({ baseUrl, timeoutMs = 10000, request = httpRequest
       const body = JSON.stringify(password ? { ...command, auth: password } : command);
       // Always urgent: only a user action sends a command.
       return (async () => {
-        const json = await send('/api/ctrl', { method: 'POST', body });
+        const json = await send('/api/ctrl', { method: 'POST', body }, urgentTimeoutMs);
         if (json.success !== true) {
           const code = typeof json.error === 'string' ? json.error : 'ERR_UNKNOWN';
           throw new AhoyError(`command refused (${code})`, { kind: 'command', code });

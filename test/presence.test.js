@@ -156,3 +156,35 @@ test('a container started in the night: the day counter of yesterday goes back t
   );
   assert.equal(result.entries.get('aa1111').resetToday, false, '22:30 in Paris: still today');
 });
+
+test('a restart by day during a DTU blip never drops the day counter to 0', () => {
+  const presence = createPresence({ timeZone: 'Europe/Paris' });
+  const tenAm = Date.parse('2026-06-21T08:00:00Z');
+  presence.update(inventory, snap(), tenAm - 3600000); // sun times known
+  const restarted = createPresence({ timeZone: 'Europe/Paris' });
+  let result = restarted.update(inventory, null, tenAm);
+  assert.equal(result.entries.get('aa1111').resetToday, false, 'DTU down');
+  result = restarted.update(inventory, snap({ available: false }), tenAm + 60000);
+  assert.equal(result.entries.get('aa1111').resetToday, false, 'inverter blip in daylight');
+});
+
+test('a polar winter day shorter than the margins counts as no daylight', () => {
+  const presence = createPresence({ timeZone: 'Europe/Oslo' });
+  const rise = Date.parse('2026-12-10T10:00:00Z');
+  const set = Date.parse('2026-12-10T12:30:00Z');
+  const polar = (available, power) => ({
+    sunrise: rise,
+    sunset: set,
+    inverters: {
+      aa1111: {
+        available,
+        producing: power > 0,
+        reading: available ? { acPower: power, dc: [] } : null,
+      },
+    },
+  });
+  presence.update(inventory, polar(true, 50), Date.parse('2026-12-10T11:00:00Z'));
+  const result = presence.update(inventory, polar(false, 0), Date.parse('2026-12-10T22:00:00Z'));
+  assert.equal(result.entries.get('aa1111').status, 'sleeping');
+  assert.deepEqual(result.events, []);
+});

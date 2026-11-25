@@ -79,10 +79,15 @@ export function createPresence({ timeZone } = {}) {
         sun = { sunrise: snapshot.sunrise, sunset: snapshot.sunset };
       }
       // Full daylight only: the twilight margins count as night.
-      const daylight =
-        sun.sunrise && sun.sunset
-          ? isDaylight(now, sun.sunrise + TWILIGHT_MS, sun.sunset - TWILIGHT_MS)
-          : null;
+      // A day shorter than both margins (near the poles in winter) has no
+      // full daylight at all.
+      let daylight = null;
+      if (sun.sunrise && sun.sunset) {
+        daylight =
+          sun.sunset - sun.sunrise > 2 * TWILIGHT_MS
+            ? isDaylight(now, sun.sunrise + TWILIGHT_MS, sun.sunset - TWILIGHT_MS)
+            : false;
+      }
       const morning = localHour(now, timeZone) < 12;
       const today = dayKey(now, timeZone);
       const entries = new Map();
@@ -156,7 +161,14 @@ export function createPresence({ timeZone } = {}) {
           // Asleep since before midnight: its day counter is yesterday's. Not
           // seen since the container started, and still silent in the
           // morning: the same (it would have woken by then).
-          resetToday: !reachable && (state.lastDay === null ? morning : state.lastDay !== today),
+          resetToday:
+            !reachable &&
+            (state.lastDay === null
+              ? // Unknown since the start: only asleep between midnight and
+                // full daylight (never on a DTU blip by day, which would drop
+                // the history to 0, nor in the evening: today's value).
+                snapshot !== null && status === 'sleeping' && morning && daylight !== true
+              : state.lastDay !== today),
         });
       }
       return { entries, events };
