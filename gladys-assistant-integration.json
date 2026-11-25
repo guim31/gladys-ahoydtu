@@ -1,177 +1,481 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "AhoyDTU",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Hoymiles micro-inverters through AhoyDTU, locally: production, panels, power limit.",
+    "fr": "Micro-onduleurs Hoymiles via AhoyDTU, en local : production, panneaux, limite de puissance.",
+    "de": "Hoymiles-Mikrowechselrichter über AhoyDTU, lokal: Produktion, Module, Leistungslimit.",
+    "es": "Microinversores Hoymiles mediante AhoyDTU, en local: producción, paneles, límite de potencia."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-ahoydtu:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-ahoydtu/main/cover.png",
+  "categories": ["energy"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
-      "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+      "label": {
+        "en": "Connect your AhoyDTU",
+        "fr": "Connecter votre AhoyDTU",
+        "de": "Deine AhoyDTU verbinden",
+        "es": "Conectar su AhoyDTU"
       },
-      "links": [
+      "description": {
+        "en": "Enter the IP address of your AhoyDTU (ESP8266 or ESP32, firmware 0.8), as shown in your router or on its display. The inverters must already be set up in AhoyDTU (Settings > Inverter). Then open the Discovery tab.",
+        "fr": "Saisissez l'adresse IP de votre AhoyDTU (ESP8266 ou ESP32, firmware 0.8), telle que l'affiche votre box ou son écran. Les onduleurs doivent déjà être configurés dans l'AhoyDTU (Settings > Inverter). Ouvrez ensuite l'onglet Découverte.",
+        "de": "Gib die IP-Adresse deiner AhoyDTU ein (ESP8266 oder ESP32, Firmware 0.8), wie sie dein Router oder ihr Display anzeigt. Die Wechselrichter müssen in AhoyDTU bereits eingerichtet sein (Settings > Inverter). Öffne dann den Tab „Entdecken“.",
+        "es": "Introduzca la dirección IP de su AhoyDTU (ESP8266 o ESP32, firmware 0.8), tal como la muestra su router o su pantalla. Los inversores deben estar ya configurados en AhoyDTU (Settings > Inverter). Después abra la pestaña Descubrir."
+      }
+    },
+    {
+      "key": "host",
+      "type": "string",
+      "label": {
+        "en": "IP address",
+        "fr": "Adresse IP",
+        "de": "IP-Adresse",
+        "es": "Dirección IP"
+      },
+      "description": {
+        "en": "Of the AhoyDTU. A host name works too.",
+        "fr": "De l'AhoyDTU. Un nom d'hôte convient aussi.",
+        "de": "Der AhoyDTU. Ein Hostname geht auch.",
+        "es": "De AhoyDTU. También sirve un nombre de host."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50",
+        "fr": "ex. 192.168.1.50",
+        "de": "z. B. 192.168.1.50",
+        "es": "p. ej. 192.168.1.50"
+      },
+      "required": true
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Admin password",
+        "fr": "Mot de passe administrateur",
+        "de": "Admin-Passwort",
+        "es": "Contraseña de administrador"
+      },
+      "description": {
+        "en": "Only if one is set in AhoyDTU (System > Protection) and you use the power limit. Reading needs none.",
+        "fr": "Seulement si l'AhoyDTU en a un (System > Protection) et que vous utilisez la limite de puissance. La lecture n'en demande pas.",
+        "de": "Nur wenn in AhoyDTU eines gesetzt ist (System > Protection) und du das Leistungslimit nutzt. Zum Lesen ist keines nötig.",
+        "es": "Solo si AhoyDTU tiene una (System > Protection) y usted utiliza el límite de potencia. La lectura no la necesita."
+      },
+      "required": false
+    },
+    {
+      "key": "poll_interval",
+      "type": "select",
+      "label": {
+        "en": "Refresh interval",
+        "fr": "Intervalle de rafraîchissement",
+        "de": "Aktualisierungsintervall",
+        "es": "Intervalo de actualización"
+      },
+      "description": {
+        "en": "How often AhoyDTU is read. It asks the inverters every 15 seconds by default.",
+        "fr": "Fréquence de lecture de l'AhoyDTU. Elle interroge les onduleurs toutes les 15 secondes par défaut.",
+        "de": "Wie oft AhoyDTU gelesen wird. Die AhoyDTU fragt die Wechselrichter standardmäßig alle 15 Sekunden ab.",
+        "es": "Frecuencia de lectura de AhoyDTU. Consulta los inversores cada 15 segundos por defecto."
+      },
+      "required": false,
+      "default": "15",
+      "options": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "value": "10",
+          "label": {
+            "en": "10 seconds",
+            "fr": "10 secondes",
+            "de": "10 Sekunden",
+            "es": "10 segundos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 seconds",
+            "fr": "15 secondes",
+            "de": "15 Sekunden",
+            "es": "15 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 seconds",
+            "fr": "60 secondes",
+            "de": "60 Sekunden",
+            "es": "60 segundos"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "allow_power_limit",
+      "type": "boolean",
+      "label": {
+        "en": "Allow the power limit",
+        "fr": "Autoriser la limite de puissance",
+        "de": "Leistungslimit erlauben",
+        "es": "Permitir el límite de potencia"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "description": {
+        "en": "Lets the action and the scenes limit the power of an inverter. Off: nothing is ever sent to the inverters.",
+        "fr": "Permet à l'action et aux scènes de limiter la puissance d'un onduleur. Désactivé : rien n'est jamais envoyé aux onduleurs.",
+        "de": "Erlaubt der Aktion und den Szenen, die Leistung eines Wechselrichters zu begrenzen. Aus: An die Wechselrichter wird nie etwas gesendet.",
+        "es": "Permite que la acción y las escenas limiten la potencia de un inversor. Desactivado: nunca se envía nada a los inversores."
+      },
+      "required": false,
+      "default": false
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Language of the texts",
+        "fr": "Langue des textes",
+        "de": "Sprache der Texte",
+        "es": "Idioma de los textos"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Names given to new inverters and features, state texts and action messages.",
+        "fr": "Noms donnés aux nouveaux onduleurs et fonctionnalités, textes d'état et messages des actions.",
+        "de": "Namen neuer Wechselrichter und Funktionen, Zustandstexte und Meldungen der Aktionen.",
+        "es": "Nombres de los nuevos inversores y funciones, textos de estado y mensajes de las acciones."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar conexión"
+      },
+      "description": {
+        "en": "Reads AhoyDTU and says how many inverters it has.",
+        "fr": "Lit l'AhoyDTU et indique combien d'onduleurs elle gère.",
+        "de": "Liest AhoyDTU und sagt, wie viele Wechselrichter sie verwaltet.",
+        "es": "Lee AhoyDTU e indica cuántos inversores gestiona."
+      },
+      "timeout_seconds": 45
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "set_power_limit",
+      "label": {
+        "en": "Set the power limit",
+        "fr": "Limiter la puissance",
+        "de": "Leistung begrenzen",
+        "es": "Limitar la potencia"
+      },
+      "description": {
+        "en": "Sends a temporary power limit to the inverter (lost at its next restart). Requires \"Allow the power limit\".",
+        "fr": "Envoie une limite de puissance temporaire à l'onduleur (perdue à son prochain redémarrage). Demande « Autoriser la limite de puissance ».",
+        "de": "Sendet ein vorübergehendes Leistungslimit an den Wechselrichter (beim nächsten Neustart verloren). Erfordert „Leistungslimit erlauben“.",
+        "es": "Envía un límite de potencia temporal al inversor (se pierde en su próximo reinicio). Requiere «Permitir el límite de potencia»."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          },
           "required": true
+        },
+        {
+          "key": "limit",
+          "type": "number",
+          "label": {
+            "en": "Limit (%)",
+            "fr": "Limite (%)",
+            "de": "Limit (%)",
+            "es": "Límite (%)"
+          },
+          "description": {
+            "en": "Share of the inverter rated power, from 2 to 100 %. 100 % removes the limit.",
+            "fr": "Part de la puissance nominale de l'onduleur, de 2 à 100 %. 100 % lève la limite.",
+            "de": "Anteil der Nennleistung des Wechselrichters, von 2 bis 100 %. 100 % hebt das Limit auf.",
+            "es": "Parte de la potencia nominal del inversor, de 2 a 100 %. 100 % elimina el límite."
+          },
+          "required": true,
+          "min": 2,
+          "max": 100
         }
       ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "inverter_unreachable",
+      "label": {
+        "en": "Hoymiles inverter not answering",
+        "fr": "Onduleur Hoymiles injoignable",
+        "de": "Hoymiles-Wechselrichter antwortet nicht",
+        "es": "Inversor Hoymiles sin respuesta"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "An inverter stopped answering by day (never at night, when it sleeps), or AhoyDTU itself.",
+        "fr": "Un onduleur ne répond plus en journée (jamais la nuit, où il dort), ou l'AhoyDTU elle-même.",
+        "de": "Ein Wechselrichter antwortet tagsüber nicht mehr (nie nachts, wenn er schläft), oder AhoyDTU selbst.",
+        "es": "Un inversor ha dejado de responder de día (nunca de noche, cuando duerme), o la propia AhoyDTU."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          },
+          "description": {
+            "en": "Leave empty for any inverter.",
+            "fr": "Laisser vide pour n'importe quel onduleur.",
+            "de": "Leer lassen für einen beliebigen Wechselrichter.",
+            "es": "Déjelo vacío para cualquier inversor."
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "inverter",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          }
+        },
+        {
+          "key": "cause",
+          "type": "string",
+          "label": {
+            "en": "Cause: inverter or dtu",
+            "fr": "Cause : inverter ou dtu",
+            "de": "Ursache: inverter oder dtu",
+            "es": "Causa: inverter o dtu"
+          }
+        }
+      ]
+    },
+    {
+      "key": "production_started",
+      "label": {
+        "en": "Hoymiles production started",
+        "fr": "Production Hoymiles démarrée",
+        "de": "Hoymiles-Produktion gestartet",
+        "es": "Producción Hoymiles iniciada"
+      },
+      "description": {
+        "en": "An inverter produces for the first time today (morning wake-up), once a day.",
+        "fr": "Un onduleur produit pour la première fois de la journée (réveil du matin), une fois par jour.",
+        "de": "Ein Wechselrichter produziert zum ersten Mal heute (Aufwachen am Morgen), einmal am Tag.",
+        "es": "Un inversor produce por primera vez hoy (despertar de la mañana), una vez al día."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          },
+          "description": {
+            "en": "Leave empty for any inverter.",
+            "fr": "Laisser vide pour n'importe quel onduleur.",
+            "de": "Leer lassen für einen beliebigen Wechselrichter.",
+            "es": "Déjelo vacío para cualquier inversor."
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "inverter",
+          "type": "string",
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          }
+        },
+        {
+          "key": "power",
+          "type": "number",
+          "label": {
+            "en": "Power (W)",
+            "fr": "Puissance (W)",
+            "de": "Leistung (W)",
+            "es": "Potencia (W)"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "set_power_limit",
+      "label": {
+        "en": "Set the power limit",
+        "fr": "Limiter la puissance",
+        "de": "Leistung begrenzen",
+        "es": "Limitar la potencia"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Sends a temporary power limit to the inverter (lost at its next restart). Requires \"Allow the power limit\".",
+        "fr": "Envoie une limite de puissance temporaire à l'onduleur (perdue à son prochain redémarrage). Demande « Autoriser la limite de puissance ».",
+        "de": "Sendet ein vorübergehendes Leistungslimit an den Wechselrichter (beim nächsten Neustart verloren). Erfordert „Leistungslimit erlauben“.",
+        "es": "Envía un límite de potencia temporal al inversor (se pierde en su próximo reinicio). Requiere «Permitir el límite de potencia»."
+      },
+      "timeout_seconds": 30,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Inverter",
+            "fr": "Onduleur",
+            "de": "Wechselrichter",
+            "es": "Inversor"
+          },
           "required": true
-        }
-      ],
-      "outputs": [
+        },
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "limit",
+          "type": "number",
+          "label": {
+            "en": "Limit (%)",
+            "fr": "Limite (%)",
+            "de": "Limit (%)",
+            "es": "Límite (%)"
+          },
+          "description": {
+            "en": "Share of the inverter rated power, from 2 to 100 %. 100 % removes the limit.",
+            "fr": "Part de la puissance nominale de l'onduleur, de 2 à 100 %. 100 % lève la limite.",
+            "de": "Anteil der Nennleistung des Wechselrichters, von 2 bis 100 %. 100 % hebt das Limit auf.",
+            "es": "Parte de la potencia nominal del inversor, de 2 a 100 %. 100 % elimina el límite."
+          },
+          "required": true,
+          "min": 2,
+          "max": 100
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "production",
+      "label": {
+        "en": "AhoyDTU",
+        "fr": "AhoyDTU",
+        "de": "AhoyDTU",
+        "es": "AhoyDTU"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Production now and today, 24-hour chart, state of each inverter.",
+        "fr": "Production instantanée et du jour, courbe sur 24 h, état de chaque onduleur.",
+        "de": "Produktion jetzt und heute, 24-Stunden-Kurve, Zustand jedes Wechselrichters.",
+        "es": "Producción actual y de hoy, gráfico de 24 h, estado de cada inversor."
+      },
+      "icon": "sun",
+      "settings": [
+        {
+          "key": "show_chart",
+          "type": "boolean",
+          "label": {
+            "en": "Show the chart",
+            "fr": "Afficher la courbe",
+            "de": "Kurve anzeigen",
+            "es": "Mostrar el gráfico"
+          },
+          "required": false,
+          "default": true
+        },
+        {
+          "key": "show_inverters",
+          "type": "boolean",
+          "label": {
+            "en": "Show each inverter",
+            "fr": "Afficher chaque onduleur",
+            "de": "Jeden Wechselrichter anzeigen",
+            "es": "Mostrar cada inversor"
+          },
+          "required": false,
+          "default": true
+        }
+      ]
     }
   ]
 }

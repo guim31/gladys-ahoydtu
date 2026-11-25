@@ -1,0 +1,44 @@
+{
+  "_comment": "A fake AhoyDTU 0.8.155 on an ESP8266 with two inverters, a summer morning in France. Values shaped by src/web/RestApi.h of lumapu/ahoy; serials invented.",
+  "version": "0.8.155",
+  "password": "",
+  "now": 1782036000,
+  "sunrise": 1782013620,
+  "sunset": 1782071820,
+  "inverters": [
+    {
+      "id": 0,
+      "enabled": true,
+      "name": "Garage",
+      "serial": "116180212345",
+      "chName": ["Sud", "Ouest"],
+      "chMaxPwr": [400, 400],
+      "available": true,
+      "powerLimit": 100,
+      "tsLastSuccess": 1782035992,
+      "ac": [231.2, 1.594, 368.4, 50.01, 1, 31.4, 1523.456, 1820, 389.3, 94.63, 0, 612.4, 48.2],
+      "dc": [
+        [33.4, 5.811, 194.1, 960, 762.125, 48.525, 310.2],
+        [32.9, 5.933, 195.2, 935, 761.331, 48.8, 302.2]
+      ]
+    },
+    {
+      "id": 1,
+      "enabled": true,
+      "name": "",
+      "serial": "114181234567",
+      "chName": ["", "", "", ""],
+      "chMaxPwr": [410, 410, 410, 410],
+      "available": true,
+      "powerLimit": 100,
+      "tsLastSuccess": 1782035987,
+      "ac": [230.8, 2.914, 672.5, 49.99, 0.999, 38, 4210.88, 3410, 705.3, 95.35, 0.1, 1204, 52.1],
+      "dc": [
+        [31.2, 5.65, 176.3, 870, 1052.2, 43, 402.1],
+        [31.1, 5.71, 177.6, 880, 1054.9, 43.32, 401.3],
+        [30.8, 5.62, 173.1, 845, 1051.7, 42.22, 398.8],
+        [30.9, 5.69, 175.8, 815, 1052.08, 42.88, 399.4]
+      ]
+    }
+  ]
+}

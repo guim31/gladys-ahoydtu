@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/app.js                        refresh cycle (own timer), reachability, actions, widget
+src/ahoy/client.js                AhoyDTU REST client (GET /api/..., POST /api/ctrl)
+src/ahoy/parse.js                 AhoyDTU JSON -> plain objects (pure)
+src/ahoy/service.js               inventory (kept in /data) and snapshot of the readings
+src/presence.js                   night or fault, scene events (pure)
+src/devices.js                    one device per inverter, its states (pure)
+src/triggers.js                   scene events -> Gladys
+src/widgets.js                    the "AhoyDTU" widget (pure)
+src/i18n.js                       every user-visible text, en / fr / de / es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys
+test/                             node --test, against the SDK's fake Gladys and test/helpers/fakeAhoy.js
+dev/fake-ahoy-server.js           the fake AhoyDTU over HTTP, for tests in Docker (not in the image)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -259,3 +264,26 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## AhoyDTU (propre à cette intégration)
+
+- Source de vérité : `src/web/RestApi.h` de lumapu/ahoy 0.8.x (licence **CC BY-NC-SA 4.0** : comportement reproduit
+  dans le faux, aucun code copié). Lectures `GET /api/*` sans mot de passe ; commandes `POST /api/ctrl`, toujours en
+  HTTP 200 `{ success, error }`. Avec mot de passe, `auth` dans le même corps que la commande : Ahoy déverrouille
+  (jeton lié à l'IP) et exécute (`setCtrl`). Codes : `ERR_AUTH`, `ERR_PROTECTED`, `ERR_LIMIT_NOT_ACCEPT` (onduleur
+  `OFF`, la nuit), `ERR_INDEX`.
+- Les onduleurs sont numérotés **par position** (`id`) : supprimer un onduleur décale les suivants. L'identifiant
+  stable est le **numéro de série** (hexa, minuscules) ; l'`id` est relu avant chaque commande.
+- `ch[0]` (AC) et `ch[1..]` (DC) de `/api/inverter/id/<id>` sont des tableaux de valeurs : l'ordre est donné par
+  `ch0_fld_names` / `fld_names` de `/api/live` (ordre 0.8 par défaut). `YieldDay` en **Wh**, `YieldTotal` en **kWh**.
+- `is_avail` passe à faux 5 min après la dernière réponse radio (`INVERTER_INACT_THRES_SEC`). Sommeil = puissance déjà
+  sous 10 W avant la perte, ou soleil à moins de 90 min de l'horizon d'après `ts_sunrise`/`ts_sunset` (0 sans
+  coordonnées) : Ahoy arrête d'interroger à `sunset + offsSs` (-60 à +60 min), et un onduleur s'éteint souvent
+  avant le coucher astronomique (relecture, 25/11).
+- Ahoy **accepte** (met en file) une commande tant que l'onduleur n'est pas `OFF`, soit 15 min après sa dernière
+  réponse (`INVERTER_OFF_THRES_SEC`) : un `success` n'est pas une livraison. La limite est refusée localement dès
+  que `/api/index` dit `is_avail: false`.
+- Ahoy peut remettre ses valeurs à 0 (options `rstMid`, `rstNotAvail`…) : un `YieldTotal` à 0 n'est jamais publié
+  (il casserait l'historique de l'index), ni une tension à 0 V.
+- La limite est **non persistante** (`limit_nonpersistent_relative`) : jamais écrite en flash, perdue au réveil.
+- Pas de logo AhoyDTU exploitable (favicon 64 px) : la cover porte le logo Hoymiles (hoymiles.com) et « via AhoyDTU ».
