@@ -90,11 +90,14 @@ Ein Hoymiles-Wechselrichter wird von seinen Modulen versorgt: In der
 Dämmerung antwortet er nicht mehr, und AhoyDTU markiert ihn fünf Minuten
 später als nicht verfügbar. Die Integration hält das nicht für einen Fehler:
 
-- mit den Sonnenzeiten von AhoyDTU ist ein Wechselrichter, der nach
-  Sonnenuntergang verstummt, **schlafend**;
-- ohne sie ist ein Wechselrichter schlafend, dessen Leistung schon vor dem
-  Verstummen auf 0 W gefallen war, während einer, der mitten in der
-  Produktion ausfällt, **nicht antwortet**.
+- ein Wechselrichter, dessen Leistung schon vor dem Verstummen unter 10 W
+  gefallen war, ist **schlafend**, egal zu welcher Uhrzeit (Winter, Schatten,
+  Module nach Osten);
+- mit den Sonnenzeiten von AhoyDTU ist ein Wechselrichter, der nachts oder
+  weniger als 90 Minuten vor Sonnenuntergang oder nach Sonnenaufgang
+  verstummt, ebenfalls schlafend;
+- nur einer, der mitten in der Produktion bei vollem Tageslicht ausfällt,
+  **antwortet nicht**.
 
 Nachts ist die Leistung 0 W, der Zustand zeigt „Schläft (Nacht)“ und der
 Gesamtertrag behält seinen Wert. Der Ertrag heute geht nach Mitternacht auf
@@ -136,8 +139,8 @@ das Limit auf.
 Das Limit wird **nicht dauerhaft** gesendet: Es wird nicht in den Speicher
 des Wechselrichters geschrieben und geht beim Neustart verloren, also jeden
 Morgen. Es ist für Szenen gedacht (Nulleinspeisung bei negativem Preis zum
-Beispiel), nicht als feste Einstellung. AhoyDTU lehnt es nachts ab, wenn der
-Wechselrichter nicht antwortet.
+Beispiel), nicht als feste Einstellung. Die Integration lehnt es ab, sobald
+AhoyDTU den Wechselrichter als nicht verfügbar meldet (zum Beispiel nachts).
 
 ## Szenen-Beispiele
 
@@ -154,8 +157,9 @@ Wechselrichter nicht antwortet.
 - **Kein Gerät in Entdecken**: Die Wechselrichter müssen in AhoyDTU
   eingerichtet sein (Settings > Inverter). Klicke auf **Verbindung testen**:
   Der Test sagt, wie viele Wechselrichter AhoyDTU verwaltet.
-- **Jeden Abend „Antwortet nicht“**: Trag die Koordinaten in AhoyDTU ein,
-  damit sie die Zeit des Sonnenuntergangs kennt.
+- **„Antwortet nicht“, obwohl es dunkel ist**: Trag die Koordinaten in
+  AhoyDTU ein, damit sie die Sonnenzeiten kennt, und melde es im Forum (mit
+  der Leistung vor dem Ausfall).
 - **„AhoyDTU hat das Passwort abgelehnt“** / **„mit einem Passwort
   geschützt“**: Gib das Admin-Passwort der AhoyDTU in der Konfiguration ein.
 - **Das Limit wird nachts abgelehnt**: normal, der Wechselrichter schläft.

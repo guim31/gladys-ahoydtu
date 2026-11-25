@@ -84,10 +84,11 @@ A Hoymiles inverter is powered by its panels: at dusk it stops answering, and
 AhoyDTU marks it unavailable five minutes later. The integration does not
 treat that as a fault:
 
-- with the sunrise and sunset times of AhoyDTU, an inverter lost after sunset
-  is **asleep**;
-- without them, an inverter whose power had already fallen to 0 W before it
-  went silent is asleep, while an inverter cut off while producing is **not
+- an inverter whose power had already faded under 10 W before it went silent
+  is **asleep**, whatever the time (winter, shade, panels facing east);
+- with the sunrise and sunset times of AhoyDTU, an inverter lost at night or
+  within 90 minutes of sunrise or sunset is asleep too;
+- only an inverter cut off while producing, in full daylight, is **not
   answering**.
 
 At night the power is 0 W, the State says "Asleep (night)" and the total
@@ -126,8 +127,8 @@ from 2 to 100 % of its rated power; 100 % removes the limit.
 The limit is sent **non-persistent**: it is not written to the inverter's
 memory and is lost when the inverter restarts, which happens every morning.
 It is meant for scenes (zero export when the price is negative, for
-instance), not as a permanent setting. AhoyDTU refuses it at night, when the
-inverter does not answer.
+instance), not as a permanent setting. The integration refuses it as soon as
+AhoyDTU says the inverter is not available (at night, for instance).
 
 ## Scene examples
 
@@ -144,8 +145,9 @@ inverter does not answer.
 - **No device in Discovery**: the inverters must be set up in AhoyDTU
   (Settings > Inverter). Click **Test the connection**: it says how many
   inverters AhoyDTU has.
-- **"Not answering" every evening**: set the coordinates in AhoyDTU so it
-  knows the sunset time.
+- **"Not answering" while it is dark**: set the coordinates in AhoyDTU so
+  it knows the sun times, and tell us on the forum (with the power before the
+  loss).
 - **"AhoyDTU refused the password"** / **"protected by a password"**: enter
   the admin password of AhoyDTU in the configuration.
 - **The limit is refused at night**: normal, the inverter is asleep.

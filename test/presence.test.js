@@ -122,3 +122,37 @@ test('an inverter disabled in Ahoy: never reachable, no event', () => {
   assert.equal(result.entries.get('aa1111').status, 'disabled');
   assert.deepEqual(result.events, []);
 });
+
+test('a fade before the astronomical sunset (winter, shade, Ahoy offset): asleep, no event', () => {
+  const presence = createPresence({ timeZone: 'Europe/Paris' });
+  presence.update(inventory, snap({ power: 3 }), SUNSET - H);
+  let result = presence.update(inventory, snap({ available: false }), SUNSET - H + 60000);
+  assert.equal(result.entries.get('aa1111').status, 'sleeping');
+  assert.deepEqual(result.events, []);
+  // Next morning, after sunrise, before the inverter wakes: still asleep.
+  result = presence.update(inventory, snap({ available: false }), SUNRISE + 24 * H + 30 * 60000);
+  assert.equal(result.entries.get('aa1111').status, 'sleeping');
+  // Cut while producing within the twilight margin: asleep too (Ahoy may stop polling).
+  const late = createPresence({ timeZone: 'Europe/Paris' });
+  late.update(inventory, snap({ power: 40 }), SUNSET - 30 * 60000);
+  result = late.update(inventory, snap({ available: false }), SUNSET - 29 * 60000);
+  assert.equal(result.entries.get('aa1111').status, 'sleeping');
+  assert.deepEqual(result.events, []);
+});
+
+test('a container started in the night: the day counter of yesterday goes back to 0', () => {
+  const presence = createPresence({ timeZone: 'Europe/Paris' });
+  let result = presence.update(
+    inventory,
+    snap({ available: false }),
+    Date.parse('2026-06-22T00:30:00Z'),
+  );
+  assert.equal(result.entries.get('aa1111').resetToday, true, '02:30 in Paris');
+  const evening = createPresence({ timeZone: 'Europe/Paris' });
+  result = evening.update(
+    inventory,
+    snap({ available: false }),
+    Date.parse('2026-06-21T20:30:00Z'),
+  );
+  assert.equal(result.entries.get('aa1111').resetToday, false, '22:30 in Paris: still today');
+});

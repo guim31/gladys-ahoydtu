@@ -88,11 +88,13 @@ Un onduleur Hoymiles est alimenté par ses panneaux : au crépuscule, il cesse
 de répondre, et l'AhoyDTU le marque indisponible cinq minutes plus tard.
 L'intégration ne prend pas cela pour une panne :
 
+- un onduleur dont la puissance était déjà passée sous 10 W avant de se taire
+  est **en veille**, quelle que soit l'heure (hiver, ombre, panneaux à l'est) ;
 - avec les heures de lever et de coucher du soleil de l'AhoyDTU, un onduleur
-  perdu après le coucher du soleil est **en veille** ;
-- sans elles, un onduleur dont la puissance était déjà tombée à 0 W avant de
-  se taire est en veille, alors qu'un onduleur coupé en pleine production
-  **ne répond pas**.
+  perdu la nuit ou à moins de 90 minutes du lever ou du coucher est aussi en
+  veille ;
+- seul un onduleur coupé en pleine production, en plein jour, **ne répond
+  pas**.
 
 La nuit, la puissance vaut 0 W, l'État indique « En veille (nuit) » et la
 production totale garde sa valeur. La production du jour revient à 0 après
@@ -133,8 +135,8 @@ Choisissez l'onduleur et une limite de 2 à 100 % de sa puissance nominale ;
 La limite est envoyée **non persistante** : elle n'est pas écrite dans la
 mémoire de l'onduleur et se perd quand il redémarre, ce qui arrive chaque
 matin. Elle sert aux scènes (zéro injection quand le prix est négatif, par
-exemple), pas de réglage permanent. L'AhoyDTU la refuse la nuit, quand
-l'onduleur ne répond pas.
+exemple), pas de réglage permanent. L'intégration la refuse dès que
+l'AhoyDTU indique l'onduleur indisponible (la nuit, par exemple).
 
 ## Exemples de scènes
 
@@ -151,8 +153,9 @@ l'onduleur ne répond pas.
 - **Aucun appareil dans Découverte** : les onduleurs doivent être configurés
   dans l'AhoyDTU (Settings > Inverter). Cliquez sur **Tester la connexion** :
   elle indique combien d'onduleurs l'AhoyDTU gère.
-- **« Ne répond pas » chaque soir** : saisissez les coordonnées dans
-  l'AhoyDTU pour qu'elle connaisse l'heure du coucher du soleil.
+- **« Ne répond pas » alors qu'il fait nuit** : saisissez les coordonnées
+  dans l'AhoyDTU pour qu'elle connaisse les heures du soleil, et
+  signalez-le sur le forum (avec la puissance avant la perte).
 - **« L'AhoyDTU a refusé le mot de passe »** / **« protégée par un mot de
   passe »** : saisissez le mot de passe administrateur de l'AhoyDTU dans la
   configuration.

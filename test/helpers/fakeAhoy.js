@@ -265,8 +265,10 @@ export function createFakeAhoy(state) {
       out.error = 'ERR_UNKNOWN_CMD';
       return false;
     }
-    // setDevControlRequest(): refused while the inverter status is OFF.
-    if (!isAvailable(iv)) {
+    // setDevControlRequest(): refused only once the inverter status is OFF,
+    // 15 minutes after its last answer (INVERTER_OFF_THRES_SEC): `off`, or
+    // simply not available when a test does not say.
+    if (iv.off ?? !isAvailable(iv)) {
       out.error = 'ERR_LIMIT_NOT_ACCEPT';
       return false;
     }

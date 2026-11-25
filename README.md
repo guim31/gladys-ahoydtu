@@ -24,9 +24,9 @@ User documentation: [English](docs/en.md) · [Français](docs/fr.md) ·
   production today, lifetime production (index), grid voltage, temperature,
   reachable (0/1), a state text, and the power and day production of each
   panel (named after the panel names of AhoyDTU).
-- **The night is not a fault**: an inverter that goes silent after sunset
-  (AhoyDTU's sun times), or after its power fell to 0 W, is asleep; one that
-  goes silent by day while producing is "not answering".
+- **The night is not a fault**: an inverter that goes silent after its power
+  faded under 10 W, or near or after sunset (AhoyDTU's sun times), is asleep;
+  one cut off while producing in full daylight is "not answering".
 - **Scene triggers**: `inverter_unreachable` (by day only; cause `inverter`
   or `dtu`) and `production_started` (first production of the day).
 - **Power limit** (action and scene action): relative, non-persistent,

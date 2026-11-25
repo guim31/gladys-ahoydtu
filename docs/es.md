@@ -84,11 +84,14 @@ Un inversor Hoymiles se alimenta de sus paneles: al anochecer deja de
 responder, y AhoyDTU lo marca como no disponible cinco minutos después. La
 integración no lo considera una avería:
 
-- con las horas de salida y puesta del sol de AhoyDTU, un inversor perdido
-  después de la puesta del sol está **en reposo**;
-- sin ellas, un inversor cuya potencia ya había bajado a 0 W antes de
-  quedarse en silencio está en reposo, mientras que uno cortado en plena
-  producción **no responde**.
+- un inversor cuya potencia ya había bajado de 10 W antes de quedarse en
+  silencio está **en reposo**, sea la hora que sea (invierno, sombra, paneles
+  orientados al este);
+- con las horas de salida y puesta del sol de AhoyDTU, un inversor perdido de
+  noche o a menos de 90 minutos de la salida o la puesta del sol también está
+  en reposo;
+- solo un inversor cortado en plena producción, a plena luz del día, **no
+  responde**.
 
 De noche la potencia es 0 W, el Estado indica «En reposo (noche)» y la
 producción total conserva su valor. La producción de hoy vuelve a 0 después
@@ -127,8 +130,8 @@ límite.
 El límite se envía **no persistente**: no se escribe en la memoria del
 inversor y se pierde cuando este se reinicia, lo que ocurre cada mañana.
 Está pensado para escenas (inyección cero cuando el precio es negativo, por
-ejemplo), no como ajuste permanente. AhoyDTU lo rechaza de noche, cuando el
-inversor no responde.
+ejemplo), no como ajuste permanente. La integración lo rechaza en cuanto
+AhoyDTU indica que el inversor no está disponible (de noche, por ejemplo).
 
 ## Ejemplos de escenas
 
@@ -145,8 +148,9 @@ inversor no responde.
 - **Ningún dispositivo en Descubrir**: los inversores deben estar
   configurados en AhoyDTU (Settings > Inverter). Haga clic en **Probar
   conexión**: indica cuántos inversores gestiona AhoyDTU.
-- **«No responde» cada noche**: introduzca las coordenadas en AhoyDTU para
-  que conozca la hora de la puesta del sol.
+- **«No responde» cuando ya es de noche**: introduzca las coordenadas en
+  AhoyDTU para que conozca las horas del sol, e indíquelo en el foro (con la
+  potencia antes de la pérdida).
 - **«AhoyDTU ha rechazado la contraseña»** / **«protegida con una
   contraseña»**: introduzca la contraseña de administrador de AhoyDTU en la
   configuración.

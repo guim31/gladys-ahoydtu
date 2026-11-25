@@ -10,7 +10,9 @@
 //   `{ success, error? }`: ERR_AUTH (wrong password), ERR_PROTECTED (password
 //   needed), ERR_LIMIT_NOT_ACCEPT (inverter not reachable by radio),
 //   ERR_INDEX (no such inverter).
-// - One request at a time: an ESP8266 serves one client poorly, several worse.
+// - One request at a time for the refresh cycle: an ESP8266 serves one client
+//   poorly, several worse. The requests of a user action skip that queue
+//   (`urgent`): waiting behind a whole cycle could outlast the action timeout.
 // -----------------------------------------------------------------------------
 
 import http from 'node:http';
@@ -118,8 +120,9 @@ export function createClient({ baseUrl, timeoutMs = 10000, request = httpRequest
      * GET /api/<path>.
      * @param {string} path e.g. "index", "inverter/id/0"
      */
-    get(path) {
-      return queued(() => send(`/api/${path}`, { method: 'GET' }));
+    get(path, { urgent = false } = {}) {
+      const run = () => send(`/api/${path}`, { method: 'GET' });
+      return urgent ? run() : queued(run);
     },
 
     /**
@@ -130,14 +133,15 @@ export function createClient({ baseUrl, timeoutMs = 10000, request = httpRequest
      */
     control(command, password = '') {
       const body = JSON.stringify(password ? { ...command, auth: password } : command);
-      return queued(async () => {
+      // Always urgent: only a user action sends a command.
+      return (async () => {
         const json = await send('/api/ctrl', { method: 'POST', body });
         if (json.success !== true) {
           const code = typeof json.error === 'string' ? json.error : 'ERR_UNKNOWN';
           throw new AhoyError(`command refused (${code})`, { kind: 'command', code });
         }
         return json;
-      });
+      })();
     },
   };
 }

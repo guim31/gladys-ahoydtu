@@ -35,8 +35,8 @@ export function createAhoyService({ client, store, now }) {
       inv.inverters.map(({ serial, channels, enabled }) => [serial, channels, enabled]),
     );
 
-  async function readList() {
-    return parseInverterList(await client.get('inverter/list'));
+  async function readList(options) {
+    return parseInverterList(await client.get('inverter/list', options));
   }
 
   return {
@@ -123,11 +123,21 @@ export function createAhoyService({ client, store, now }) {
      * @throws {AhoyError} kind "command" (code) or "unknown_inverter", or a reading error
      */
     async setPowerLimit(serial, percent, password) {
-      const inverter = (await readList()).find((entry) => entry.serial === serial);
+      const inverter = (await readList({ urgent: true })).find((entry) => entry.serial === serial);
       if (!inverter) {
         throw new AhoyError('inverter not found on the DTU', {
           kind: 'command',
           code: 'ERR_INDEX',
+        });
+      }
+      // Ahoy accepts a command (queues it) until the inverter has been silent
+      // for 15 minutes (status OFF): in between, a "success" would never reach
+      // the inverter. Refused here as soon as Ahoy says it is not available.
+      const index = parseIndex(await client.get('index', { urgent: true }));
+      if (index.inverters.get(inverter.id)?.available !== true) {
+        throw new AhoyError('inverter not available', {
+          kind: 'command',
+          code: 'ERR_LIMIT_NOT_ACCEPT',
         });
       }
       await client.control(

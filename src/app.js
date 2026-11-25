@@ -161,7 +161,11 @@ export function createApp({
     }
     try {
       await gladys.publishDiscoveredDevices(devices);
-      issues.ok('publish', 'Inverters accepted by Gladys again');
+      if (issues.isFailing('publish')) {
+        issues.ok('publish', 'Inverters accepted by Gladys again');
+        // The status said "refused": say it is fine again.
+        if (reachable === true) await setStatus(true);
+      }
     } catch (err) {
       issues.fail('publish', `Gladys refused the inverters (${err.message})`);
       await setStatus(false, MESSAGES.publishFailed(err.message));
@@ -269,7 +273,16 @@ export function createApp({
     lastEntries = entries;
     lastUpdateAt = snapshot ? snapshot.fetchedAt : lastUpdateAt;
     await publishEntries();
-    await triggers.fire(service.inventory, events);
+    // Events only for the inverters added to Gladys: the device they name
+    // must exist there.
+    const { devices } = createdOnGladys();
+    await triggers.fire(
+      service.inventory,
+      events.filter((event) => {
+        const inverter = service.inventory.inverters.find((inv) => inv.serial === event.serial);
+        return inverter && devices.has(inverterIds(gladys, inverter).device);
+      }),
+    );
     nudgeWidget();
   }
 

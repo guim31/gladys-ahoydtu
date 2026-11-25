@@ -214,3 +214,17 @@ test('configuration: not configured, invalid address, names in another language'
   assert.equal(world.gladys.fake.discoveredDevices[0].features[0].name, 'Leistung');
   await world.app.stop();
 });
+
+test('Gladys refuses the inverters once: the status comes back when it accepts them again', async () => {
+  const world = await createWorld();
+  const original = world.gladys.publishDiscoveredDevices.bind(world.gladys);
+  world.gladys.publishDiscoveredDevices = async () => {
+    throw new Error('Request failed with status code 422');
+  };
+  await world.gladys.fake.scanRequest();
+  assert.equal(world.gladys.fake.connectionStatus.connected, false);
+  world.gladys.publishDiscoveredDevices = original;
+  await world.gladys.fake.scanRequest();
+  assert.equal(world.gladys.fake.connectionStatus.connected, true);
+  await world.app.stop();
+});

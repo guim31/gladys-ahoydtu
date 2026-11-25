@@ -90,3 +90,18 @@ test('the events carry the name given in Gladys', async () => {
   assert.equal(world.gladys.fake.sceneEvents[0].data.inverter, 'Toit sud');
   await world.app.stop();
 });
+
+test('no event for an inverter not added to Gladys', async () => {
+  const world = await createWorld({ create: false });
+  await world.gladys.fake.deviceCreated(world.device('inverter:114181234567'));
+  world.ahoy.state.inverters[0].available = false;
+  world.ahoy.state.inverters[1].available = false;
+  world.clock.advance(15000);
+  await world.app.cycle();
+  world.clock.advance(15000);
+  await world.app.cycle();
+  const fired = world.gladys.fake.sceneEvents.map((event) => event.data.device);
+  assert.equal(fired.length, 1, 'the added inverter only');
+  assert.ok(fired.every((id) => id.endsWith('114181234567')));
+  await world.app.stop();
+});

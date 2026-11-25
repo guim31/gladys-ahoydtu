@@ -111,3 +111,17 @@ test('the power limit at night or with the DTU down: red, with the reason', asyn
   );
   await world.app.stop();
 });
+
+test('the power limit to an inverter just gone silent: refused here, never queued in Ahoy', async () => {
+  const world = await createWorld({ config: ALLOWED });
+  const device = world.device(HM800).external_id;
+  // Not available for Ahoy, but not OFF yet: Ahoy itself would accept and queue it.
+  world.ahoy.state.inverters[0].available = false;
+  world.ahoy.state.inverters[0].off = false;
+  assertFailure(
+    await world.gladys.fake.action('set_power_limit', { device, limit: 50 }),
+    /pas joignable par radio/,
+  );
+  assert.equal(world.ahoy.count('/api/ctrl'), 0);
+  await world.app.stop();
+});

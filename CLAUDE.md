@@ -276,8 +276,13 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   stable est le **numéro de série** (hexa, minuscules) ; l'`id` est relu avant chaque commande.
 - `ch[0]` (AC) et `ch[1..]` (DC) de `/api/inverter/id/<id>` sont des tableaux de valeurs : l'ordre est donné par
   `ch0_fld_names` / `fld_names` de `/api/live` (ordre 0.8 par défaut). `YieldDay` en **Wh**, `YieldTotal` en **kWh**.
-- `is_avail` passe à faux 5 min après la dernière réponse radio (`INVERTER_INACT_THRES_SEC`). Nuit = soleil couché
-  d'après `ts_sunrise`/`ts_sunset` (0 sans coordonnées dans Ahoy), sinon puissance déjà à 0 W avant la perte.
+- `is_avail` passe à faux 5 min après la dernière réponse radio (`INVERTER_INACT_THRES_SEC`). Sommeil = puissance déjà
+  sous 10 W avant la perte, ou soleil à moins de 90 min de l'horizon d'après `ts_sunrise`/`ts_sunset` (0 sans
+  coordonnées) : Ahoy arrête d'interroger à `sunset + offsSs` (-60 à +60 min), et un onduleur s'éteint souvent
+  avant le coucher astronomique (relecture, 25/11).
+- Ahoy **accepte** (met en file) une commande tant que l'onduleur n'est pas `OFF`, soit 15 min après sa dernière
+  réponse (`INVERTER_OFF_THRES_SEC`) : un `success` n'est pas une livraison. La limite est refusée localement dès
+  que `/api/index` dit `is_avail: false`.
 - Ahoy peut remettre ses valeurs à 0 (options `rstMid`, `rstNotAvail`…) : un `YieldTotal` à 0 n'est jamais publié
   (il casserait l'historique de l'index), ni une tension à 0 V.
 - La limite est **non persistante** (`limit_nonpersistent_relative`) : jamais écrite en flash, perdue au réveil.

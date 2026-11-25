@@ -5,18 +5,23 @@
 // The night is not a fault. A Hoymiles inverter is powered by its panels: at
 // dusk it stops answering the radio, and Ahoy marks it "not available" five
 // minutes later. An inverter that stops answering is said asleep when:
+// - its power had already faded under FADE_POWER_W before it went silent (a
+//   graceful dusk, whatever the time: winter, panels facing east, shade); or
 // - Ahoy knows the sun times (coordinates set in its settings) and the sun is
-//   down; or, without sun times,
-// - its power had already fallen to 0 W before it went silent (a graceful
-//   dusk), unlike an inverter cut off while producing.
-// Otherwise it is "not answering", and the `inverter_unreachable` scene event
-// fires — at most once per loss. An AhoyDTU that stops answering by day makes
+//   down or close to the horizon (TWILIGHT_MS around sunrise and sunset: Ahoy
+//   itself stops polling at sunset + its evening offset, -60 to +60 min).
+// Only an inverter cut off while producing, by day, is "not answering", and
+// the `inverter_unreachable` scene event fires — at most once per loss. An AhoyDTU that stops answering by day makes
 // every inverter that was reachable fire it, with the cause "dtu".
 //
 // `production_started` fires when an inverter starts producing after a period
 // without production, once per day (the morning wake-up, not every cloud).
 // Nothing fires on the first reading after a start: nothing has changed yet.
 // -----------------------------------------------------------------------------
+
+// Under this power, an inverter going silent is fading out for the night.
+export const FADE_POWER_W = 10;
+export const TWILIGHT_MS = 90 * 60 * 1000;
 
 /**
  * Is the sun up? Ahoy gives today's sunrise and sunset; only their time of
@@ -32,6 +37,15 @@ export function isDaylight(now, sunrise, sunset) {
   const [t, rise, set] = [tod(now), tod(sunrise), tod(sunset)];
   // Sunrise and sunset can straddle midnight UTC (east of UTC+12, west of...).
   return rise <= set ? t >= rise && t <= set : t >= rise || t <= set;
+}
+
+/** The hour (0-23) of an instant in a time zone. */
+function localHour(now, timeZone) {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', hourCycle: 'h23' }).format(
+      new Date(now),
+    ),
+  );
 }
 
 /** The calendar day of an instant in a time zone, e.g. "2026-06-21". */
@@ -64,7 +78,12 @@ export function createPresence({ timeZone } = {}) {
       if (snapshot?.sunrise && snapshot?.sunset) {
         sun = { sunrise: snapshot.sunrise, sunset: snapshot.sunset };
       }
-      const daylight = isDaylight(now, sun.sunrise, sun.sunset);
+      // Full daylight only: the twilight margins count as night.
+      const daylight =
+        sun.sunrise && sun.sunset
+          ? isDaylight(now, sun.sunrise + TWILIGHT_MS, sun.sunset - TWILIGHT_MS)
+          : null;
+      const morning = localHour(now, timeZone) < 12;
       const today = dayKey(now, timeZone);
       const entries = new Map();
       const events = [];
@@ -99,9 +118,9 @@ export function createPresence({ timeZone } = {}) {
         } else {
           if (state.reachable) {
             // Just lost: remember how it left.
-            state.lostWhileProducing = (state.lastPower ?? 0) > 0;
+            state.lostWhileProducing = (state.lastPower ?? 0) > FADE_POWER_W;
           }
-          const night = daylight === false || (daylight === null && !state.lostWhileProducing);
+          const night = daylight === false || !state.lostWhileProducing;
           status = snapshot === null ? 'dtuUnreachable' : night ? 'sleeping' : 'unreachable';
           if (previous && state.reachable === true && !night && inverter.enabled) {
             events.push({
@@ -134,8 +153,10 @@ export function createPresence({ timeZone } = {}) {
           reachable,
           producing,
           reading,
-          // Asleep since before midnight: its day counter is yesterday's.
-          resetToday: !reachable && state.lastDay !== null && state.lastDay !== today,
+          // Asleep since before midnight: its day counter is yesterday's. Not
+          // seen since the container started, and still silent in the
+          // morning: the same (it would have woken by then).
+          resetToday: !reachable && (state.lastDay === null ? morning : state.lastDay !== today),
         });
       }
       return { entries, events };
