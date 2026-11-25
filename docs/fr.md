@@ -1,67 +1,183 @@
-# Template de démonstration
+# AhoyDTU
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Suivez vos **micro-onduleurs Hoymiles** dans Gladys grâce à
+[AhoyDTU](https://github.com/lumapu/ahoy), le firmware libre pour cartes
+ESP8266 et ESP32 qui dialogue par radio avec les onduleurs. Tout reste sur
+votre réseau local : ni cloud Hoymiles, ni compte.
 
-## Ce que vous obtenez
+> **Développée sans le matériel : vos retours sont les bienvenus.** Cette
+> intégration a été écrite à partir du code source d'AhoyDTU 0.8 et testée
+> contre une simulation fidèle de son API, pas contre une vraie DTU. Si
+> quelque chose cloche, dites-le sur le forum Gladys ou dans une issue GitHub.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Présentation
+
+- Un appareil Gladys par onduleur configuré dans l'AhoyDTU (séries HM, HMS,
+  HMT).
+- Puissance AC en direct, production du jour, production totale, tension
+  réseau et température, plus la puissance et la production du jour de chaque
+  panneau.
+- Une fonctionnalité « Joignable » et un texte « État » qui distinguent la
+  nuit (l'onduleur dort, c'est normal) d'une vraie perte.
+- Deux déclencheurs de scène : un onduleur qui ne répond plus en journée, et
+  la première production de la journée.
+- Une limite de puissance temporaire, en action et en action de scène,
+  **désactivée par défaut**.
+- Un widget « AhoyDTU » pour le tableau de bord.
+
+Vous utilisez OpenDTU plutôt qu'AhoyDTU ? Installez plutôt l'intégration
+**Hoymiles (OpenDTU)** du store : elle lit les mêmes onduleurs via OpenDTU.
+
+## Prérequis
+
+- Une AhoyDTU en firmware **0.8** (testée contre la 0.8.155), sur le même
+  réseau que Gladys, avec ses onduleurs déjà configurés (Settings > Inverter).
+- Son adresse IP : affichée sur son écran si elle en a un, dans votre box, ou
+  dans la page System de l'AhoyDTU. Une adresse fixe (réservation DHCP) est
+  recommandée.
+- Gladys 5.1 ou plus récent.
+
+Pour que la nuit soit détectée exactement, saisissez les coordonnées de votre
+installation dans l'AhoyDTU (Settings > Sunrise & Sunset) : elle donne alors
+les heures de lever et de coucher du soleil. Sans elles, l'intégration
+fonctionne quand même et se fie à la façon dont l'onduleur s'est tu (voir
+« Nuit et jour »).
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+- **Adresse IP** : l'adresse de votre AhoyDTU, par ex. `192.168.1.50`. Un nom
+  d'hôte convient aussi.
+- **Mot de passe administrateur** : seulement si l'AhoyDTU en a un (System >
+  Protection) et que vous voulez utiliser la limite de puissance. La lecture
+  des valeurs n'en demande pas.
+- **Intervalle de rafraîchissement** : 10, 15 (par défaut), 30 ou 60
+  secondes. L'AhoyDTU interroge elle-même les onduleurs toutes les 15
+  secondes par défaut : la lire plus souvent n'apporte rien.
+- **Autoriser la limite de puissance** : désactivé par défaut. Tant qu'il
+  l'est, rien n'est jamais envoyé aux onduleurs.
+- **Langue des textes** : noms donnés aux nouveaux appareils et
+  fonctionnalités, textes d'état et messages des actions. Français par défaut.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Cliquez ensuite sur **Tester la connexion**, ouvrez l'onglet **Découverte** et
+ajoutez vos onduleurs.
 
-## Actions
+## Appareils
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+Chaque onduleur devient un appareil nommé comme dans l'AhoyDTU (ou
+« Onduleur » suivi de son numéro de série s'il n'a pas de nom). Ses
+fonctionnalités :
 
-## Scènes
+| Fonctionnalité       | Unité | Remarques                                           |
+| -------------------- | ----- | --------------------------------------------------- |
+| Puissance            | W     | puissance AC injectée dans la maison                |
+| Production du jour   | kWh   | revient à 0 après minuit                            |
+| Production totale    | kWh   | index cumulé, jamais remis à zéro                   |
+| Tension réseau       | V     |                                                     |
+| Température          | °C    | de l'onduleur                                       |
+| Joignable            | 0/1   | 1 quand l'onduleur répond à la radio                |
+| État                 | texte | en production, éveillé, en veille (nuit)…           |
+| Puissance panneau N  | W     | une par entrée DC, avec le nom de panneau d'AhoyDTU |
+| Production panneau N | kWh   | production du jour, une par entrée DC               |
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+Les noms sont figés à la création de l'appareil : renommez-les dans Gladys si
+vous le souhaitez.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+## Nuit et jour
 
-## Tableau de bord
+Un onduleur Hoymiles est alimenté par ses panneaux : au crépuscule, il cesse
+de répondre, et l'AhoyDTU le marque indisponible cinq minutes plus tard.
+L'intégration ne prend pas cela pour une panne :
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+- avec les heures de lever et de coucher du soleil de l'AhoyDTU, un onduleur
+  perdu après le coucher du soleil est **en veille** ;
+- sans elles, un onduleur dont la puissance était déjà tombée à 0 W avant de
+  se taire est en veille, alors qu'un onduleur coupé en pleine production
+  **ne répond pas**.
+
+La nuit, la puissance vaut 0 W, l'État indique « En veille (nuit) » et la
+production totale garde sa valeur. La production du jour revient à 0 après
+minuit, même si l'onduleur dort encore. La nuit, l'intégration lit l'AhoyDTU
+une fois par intervalle, sans demander les valeurs des onduleurs endormis.
+
+## Widget
+
+Le widget **AhoyDTU** affiche la production instantanée et du jour, une
+courbe sur 24 heures et l'état de chaque onduleur (avec sa limite de
+puissance quand il en a une). Avec un seul onduleur ajouté à Gladys, les
+tuiles suivent ses fonctionnalités en direct ; avec plusieurs, elles
+affichent les sommes. La courbe et les lignes des onduleurs se masquent dans
+les réglages du widget.
+
+## Déclencheurs de scène
+
+- **Onduleur Hoymiles injoignable** : un onduleur ne répond plus en journée,
+  ou l'AhoyDTU elle-même ne répond plus (variable `cause` : `inverter` ou
+  `dtu`). Jamais la nuit. Au plus un événement toutes les 10 minutes par
+  onduleur.
+- **Production Hoymiles démarrée** : un onduleur produit pour la première
+  fois de la journée (réveil du matin), une fois par jour. Pratique pour
+  lancer une machine à laver au soleil.
+
+Les deux peuvent être limités à un onduleur et donnent son nom (`inverter`) à
+la scène. Pour « puissance au-dessus de X W », utilisez le déclencheur
+standard d'appareil sur la fonctionnalité Puissance : il a le seuil et la
+durée.
+
+## Limite de puissance
+
+Disponible comme action de l'intégration (**Limiter la puissance**) et comme
+action de scène, une fois **Autoriser la limite de puissance** activé.
+Choisissez l'onduleur et une limite de 2 à 100 % de sa puissance nominale ;
+100 % lève la limite.
+
+La limite est envoyée **non persistante** : elle n'est pas écrite dans la
+mémoire de l'onduleur et se perd quand il redémarre, ce qui arrive chaque
+matin. Elle sert aux scènes (zéro injection quand le prix est négatif, par
+exemple), pas de réglage permanent. L'AhoyDTU la refuse la nuit, quand
+l'onduleur ne répond pas.
+
+## Exemples de scènes
+
+- Quand « Onduleur Hoymiles injoignable » se déclenche avec la cause
+  `inverter`, envoyer un message : un disjoncteur a peut-être sauté.
+- Quand « Production Hoymiles démarrée », lancer le lave-vaisselle.
+- Quand le prix du réseau devient négatif, limiter la puissance à 2 % ; la
+  remettre à 100 % quand il redevient positif.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **« L'AhoyDTU ne répond pas »** : vérifiez l'adresse, que la carte est
+  alimentée et sur le même réseau. Le message donne l'erreur réseau.
+- **Aucun appareil dans Découverte** : les onduleurs doivent être configurés
+  dans l'AhoyDTU (Settings > Inverter). Cliquez sur **Tester la connexion** :
+  elle indique combien d'onduleurs l'AhoyDTU gère.
+- **« Ne répond pas » chaque soir** : saisissez les coordonnées dans
+  l'AhoyDTU pour qu'elle connaisse l'heure du coucher du soleil.
+- **« L'AhoyDTU a refusé le mot de passe »** / **« protégée par un mot de
+  passe »** : saisissez le mot de passe administrateur de l'AhoyDTU dans la
+  configuration.
+- **La limite est refusée la nuit** : normal, l'onduleur dort.
+- Passez le niveau de journalisation en debug dans Gladys pour voir chaque
+  requête.
+
+## Limites
+
+- Développée sans le matériel, contre une simulation de l'API d'AhoyDTU 0.8 :
+  vos retours sont les bienvenus.
+- Les AhoyDTU 0.7 et antérieures ne sont pas testées. Le MQTT n'est pas
+  utilisé : seulement l'API REST.
+- Seule la limite relative non persistante est proposée ; ni marche/arrêt, ni
+  redémarrage, ni limite persistante (elle use la mémoire de l'onduleur).
+- Pas de fonctionnalités fréquence, courant ou rendement.
+- Les valeurs de production sont celles de l'onduleur : elles peuvent
+  légèrement différer de celles d'un compteur.
+
+## Données et réseau
+
+- L'intégration ne parle qu'à l'adresse saisie, en HTTP simple (le seul
+  protocole de l'AhoyDTU), sur votre réseau local. Rien ne sort de chez vous.
+- Elle garde dans son volume `/data` la liste des onduleurs (numéros de série,
+  noms, noms des panneaux), pour les retrouver après un redémarrage. Le mot de
+  passe reste dans la configuration de Gladys et n'est jamais écrit dans un
+  journal.
+- Sans lien avec Hoymiles ni avec le projet AhoyDTU.
