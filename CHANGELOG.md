@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-25
+
 ### Added
 
 - Hoymiles micro-inverters through AhoyDTU 0.8, on the local network: one
@@ -25,3 +27,6 @@ the notes of the version's GitHub Release.
 - The "AhoyDTU" dashboard widget: production now and today, 24-hour chart,
   state of each inverter.
 - Documentation in English, French, German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-ahoydtu/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-ahoydtu/releases/tag/v1.0.0
